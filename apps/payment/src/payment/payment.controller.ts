@@ -1,0 +1,15 @@
+import {Controller, UsePipes, ValidationPipe} from '@nestjs/common';
+import {PaymentService} from './payment.service';
+import {MessagePattern, Payload} from '@nestjs/microservices';
+import {MakePaymentDto} from './dto/make-payment.dto';
+
+@Controller()
+export class PaymentController {
+  constructor(private readonly paymentService: PaymentService) {}
+
+  @MessagePattern({cmd: 'make_payment'})
+  @UsePipes(ValidationPipe)
+  makePayment(@Payload() payload: MakePaymentDto) {
+    return this.paymentService.makePayment(payload);
+  }
+}
