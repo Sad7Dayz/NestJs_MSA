@@ -1,4 +1,4 @@
-import {IsNotEmpty, IsString, IsNumber} from 'class-validator';
+import {IsNotEmpty, IsNumber, IsString} from 'class-validator';
 
 /**
  * 회원가입 DTO (Data Transfer Object)
@@ -6,6 +6,10 @@ import {IsNotEmpty, IsString, IsNumber} from 'class-validator';
  * email과 password는 Authorization 헤더에서 추출하므로 여기에는 포함되지 않음
  */
 export class RegisterDto {
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
   /**
    * 사용자 이름
    * @IsString() - 문자열 타입인지 검증

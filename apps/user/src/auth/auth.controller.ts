@@ -1,18 +1,16 @@
 import {
   Controller,
-  Post,
   UnauthorizedException,
-  Body,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
-import {AuthService} from './auth.service';
-import {RegisterDto} from './dto/register-dto';
-import {Authorization} from './decorator/authorization.decorator';
 import {MessagePattern, Payload} from '@nestjs/microservices';
-import {ParseBearerTokenDto} from './dto/parse-bearer-token.dto';
 import {RpcInterceptor} from '../../../../libs/common/src/interceptor/rpc.interceptor';
+import {AuthService} from './auth.service';
+import {LoginDto} from './dto/login.dto';
+import {ParseBearerTokenDto} from './dto/parse-bearer-token.dto';
+import {RegisterDto} from './dto/register-dto';
 
 /**
  * 인증 관련 API를 처리하는 컨트롤러
@@ -31,12 +29,46 @@ export class AuthController {
    * @param registerDto - 요청 본문(Body)에서 받은 회원가입 정보
    * @returns 생성된 사용자 정보
    */
-  @Post('register')
+  // @Post('register')
+  // @UsePipes(ValidationPipe)
+  // registerUser(
+  //   @Authorization() token: string, // 커스텀 데코레이터로 Authorization 헤더 추출
+  //   @Body() registerDto: RegisterDto, // 요청 본문에서 회원가입 정보 추출
+  // ) {
+  //   // 토큰이 없으면 401 Unauthorized 에러 발생
+  //   if (token === null) {
+  //     throw new UnauthorizedException('토큰을 입력해주세요!');
+  //   }
+
+  //   // AuthService의 register 메서드 호출하여 회원가입 처리
+  //   return this.authService.register(token, registerDto);
+  // }
+
+  // @Post('login')
+  // @UsePipes(ValidationPipe)
+  // loginUser(@Authorization() token: string) {
+  //   if (token === null) {
+  //     throw new UnauthorizedException('토큰을 입력해주세요!');
+  //   }
+  //   return this.authService.login(token);
+  // }
+
+  @MessagePattern({
+    cmd: 'parse_bearer_token',
+  })
   @UsePipes(ValidationPipe)
+  @UseInterceptors(RpcInterceptor)
+  parseBearerToken(@Payload() payload: ParseBearerTokenDto) {
+    return this.authService.parseBearerToken(payload.token, false);
+  }
+
+  @MessagePattern({
+    cmd: 'register',
+  })
   registerUser(
-    @Authorization() token: string, // 커스텀 데코레이터로 Authorization 헤더 추출
-    @Body() registerDto: RegisterDto, // 요청 본문에서 회원가입 정보 추출
+    @Payload() registerDto: RegisterDto, // 요청 본문에서 회원가입 정보 추출
   ) {
+    const {token} = registerDto;
     // 토큰이 없으면 401 Unauthorized 에러 발생
     if (token === null) {
       throw new UnauthorizedException('토큰을 입력해주세요!');
@@ -46,21 +78,14 @@ export class AuthController {
     return this.authService.register(token, registerDto);
   }
 
-  @Post('login')
-  @UsePipes(ValidationPipe)
-  loginUser(@Authorization() token: string) {
+  @MessagePattern({
+    cmd: 'login',
+  })
+  loginUser(@Payload() loginDto: LoginDto) {
+    const {token} = loginDto;
     if (token === null) {
       throw new UnauthorizedException('토큰을 입력해주세요!');
     }
     return this.authService.login(token);
-  }
-
-  @MessagePattern({
-    cmd: 'parse_bearer_token',
-  })
-  @UsePipes(ValidationPipe)
-  @UseInterceptors(RpcInterceptor)
-  parseBearerToken(@Payload() payload: ParseBearerTokenDto) {
-    return this.authService.parseBearerToken(payload.token, false);
   }
 }
