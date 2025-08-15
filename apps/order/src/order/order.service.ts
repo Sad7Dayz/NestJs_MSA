@@ -1,16 +1,16 @@
-import {Inject, Injectable} from '@nestjs/common';
-import {CreateOrderDto} from './dto/create-order.dto';
-import {ClientProxy} from '@nestjs/microservices';
-import {lastValueFrom} from 'rxjs';
 import {PAYMENT_SERVICE, PRODUCT_SERVICE, USER_SERVICE} from '@app/common';
-import {PaymentCancelledException} from './exception/payment-cancelled.exception';
-import {Product} from './entity/product.entity';
-import {Customer} from './entity/customer.entity';
-import {AddressDto} from './dto/address.dto';
+import {Inject, Injectable} from '@nestjs/common';
+import {ClientProxy} from '@nestjs/microservices';
 import {InjectModel} from '@nestjs/mongoose';
-import {Order, OrderStatus} from './entity/order.entity';
 import {Model} from 'mongoose';
+import {lastValueFrom} from 'rxjs';
+import {AddressDto} from './dto/address.dto';
+import {CreateOrderDto} from './dto/create-order.dto';
 import {PaymentDto} from './dto/payment.dto';
+import {Customer} from './entity/customer.entity';
+import {Order, OrderStatus} from './entity/order.entity';
+import {Product} from './entity/product.entity';
+import {PaymentCancelledException} from './exception/payment-cancelled.exception';
 import {PaymentFailedException} from './exception/payment-failed.exception';
 
 @Injectable()
@@ -28,11 +28,11 @@ export class OrderService {
     @InjectModel(Order.name)
     private readonly orderModel: Model<Order>, // Mongoose 모델 주입
   ) {}
-  async createOrder(createOrderDto: CreateOrderDto, token: string) {
-    const {productIds, address, payment} = createOrderDto;
+  async createOrder(createOrderDto: CreateOrderDto) {
+    const {productIds, address, payment, meta} = createOrderDto;
 
     /// 1)사용자 정보 가져오기
-    const user = await this.getUserFromToken(token);
+    const user = await this.getUserFromToken(meta.user.sub);
     /// 2)상품 정보 가져오기
     const products = await this.getProductsByIds(productIds);
     /// 3)총 금액 계산하기
@@ -53,18 +53,18 @@ export class OrderService {
     return this.orderModel.findById(order._id);
   }
 
-  private async getUserFromToken(token: string) {
+  private async getUserFromToken(userId: string) {
     /// 1) User MS: JWT 토큰 검증
-    const tResp = await lastValueFrom(
-      this.userService.send({cmd: 'parse_bearer_token'}, {token}),
-    );
+    // const tResp = await lastValueFrom(
+    //   this.userService.send({cmd: 'parse_bearer_token'}, {token}),
+    // );
 
-    if (tResp.status === 'error') {
-      throw new PaymentCancelledException(tResp);
-    }
+    // if (tResp.status === 'error') {
+    //   throw new PaymentCancelledException(tResp);
+    // }
 
-    /// 2) User MS: 사용자 정보 가져오기
-    const userId = tResp.data.sub;
+    // /// 2) User MS: 사용자 정보 가져오기
+    // const userId = tResp.data.sub;
     const uResp = await lastValueFrom(
       this.userService.send({cmd: 'get_user_info'}, {userId}),
     );
