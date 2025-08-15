@@ -1,20 +1,23 @@
+import {RpcInterceptor} from '@app/common/interceptor/rpc.interceptor';
 import {
   Controller,
-  Post,
   UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import {ProductService} from './product.service';
 import {MessagePattern, Payload} from '@nestjs/microservices';
 import {GetProductsInfo} from './dto/get-products-info.dto';
-import {RpcInterceptor} from '../../../../libs/common/src/interceptor/rpc.interceptor';
+import {ProductService} from './product.service';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  @Post('sample')
+  @MessagePattern({
+    cmd: 'create_samples',
+  })
+  @UsePipes(ValidationPipe)
+  @UseInterceptors(RpcInterceptor)
   async createSamples() {
     return await this.productService.createSamples();
   }
