@@ -26,10 +26,21 @@ import {ProductModule} from './product/product.module';
         {
           name: USER_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('USER_HOST'),
-              port: configService.getOrThrow<number>('USER_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'user_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              //redis를 사용하여 마이크로서비스 간 통신을 설정합니다.
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 User 마이크로서비스
+              // host: configService.getOrThrow<string>('USER_HOST'),
+              // port: configService.getOrThrow<number>('USER_TCP_PORT'),
             },
           }),
           inject: [ConfigService],
@@ -37,10 +48,20 @@ import {ProductModule} from './product/product.module';
         {
           name: PRODUCT_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('PRODUCT_HOST'),
-              port: configService.getOrThrow<number>('PRODUCT_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'product_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Product 마이크로서비스
+              // host: configService.getOrThrow<string>('PRODUCT_HOST'),
+              // port: configService.getOrThrow<number>('PRODUCT_TCP_PORT'),
             },
           }),
           inject: [ConfigService],
@@ -48,10 +69,20 @@ import {ProductModule} from './product/product.module';
         {
           name: ORDER_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('ORDER_HOST'),
-              port: configService.getOrThrow<number>('ORDER_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'order_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Order 마이크로서비스
+              // host: configService.getOrThrow<string>('ORDER_HOST'),
+              // port: configService.getOrThrow<number>('ORDER_TCP_PORT'),
             },
           }),
           inject: [ConfigService],

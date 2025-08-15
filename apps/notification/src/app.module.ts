@@ -1,10 +1,10 @@
+import {ORDER_SERVICE} from '@app/common';
 import {Module} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
-import * as Joi from 'joi';
-import {MongooseModule} from '@nestjs/mongoose';
-import {NotificationModule} from './notification/notification.module';
 import {ClientsModule, Transport} from '@nestjs/microservices';
-import {ORDER_SERVICE} from '@app/common';
+import {MongooseModule} from '@nestjs/mongoose';
+import * as Joi from 'joi';
+import {NotificationModule} from './notification/notification.module';
 
 @Module({
   imports: [
@@ -29,10 +29,20 @@ import {ORDER_SERVICE} from '@app/common';
         {
           name: ORDER_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('ORDER_HOST'),
-              port: configService.getOrThrow<number>('ORDER_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'order_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Order 마이크로서비스
+              // host: configService.getOrThrow<string>('ORDER_HOST'),
+              // port: configService.getOrThrow<number>('ORDER_TCP_PORT'),
             },
           }),
           inject: [ConfigService],

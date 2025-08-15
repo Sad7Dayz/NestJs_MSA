@@ -1,11 +1,11 @@
+import {NOTIFICATION_SERVICE} from '@app/common';
 import {Module} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
+import {Transport} from '@nestjs/microservices';
+import {ClientsModule} from '@nestjs/microservices/module/clients.module';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import * as Joi from 'joi';
 import {PaymentModule} from './payment/payment.module';
-import {ClientsModule} from '@nestjs/microservices/module/clients.module';
-import {NOTIFICATION_SERVICE} from '@app/common';
-import {Transport} from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -30,10 +30,21 @@ import {Transport} from '@nestjs/microservices';
         {
           name: NOTIFICATION_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('NOTIFICATION_HOST'),
-              port: configService.getOrThrow<number>('NOTIFICATION_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'notification_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // redis를 사용하여 마이크로서비스 간 통신을 설정합니다.
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Notification 마이크로서비스
+              // host: configService.getOrThrow<string>('NOTIFICATION_HOST'),
+              // port: configService.getOrThrow<number>('NOTIFICATION_TCP_PORT'),
             },
           }),
           inject: [ConfigService],

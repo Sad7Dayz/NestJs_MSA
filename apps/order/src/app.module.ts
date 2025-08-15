@@ -1,10 +1,10 @@
+import {PAYMENT_SERVICE, PRODUCT_SERVICE, USER_SERVICE} from '@app/common';
 import {Module} from '@nestjs/common';
-import {OrderModule} from './order/order.module';
 import {ConfigModule, ConfigService} from '@nestjs/config';
-import * as Joi from 'joi';
-import {MongooseModule} from '@nestjs/mongoose';
 import {ClientsModule, Transport} from '@nestjs/microservices';
-import {USER_SERVICE, PRODUCT_SERVICE, PAYMENT_SERVICE} from '@app/common';
+import {MongooseModule} from '@nestjs/mongoose';
+import * as Joi from 'joi';
+import {OrderModule} from './order/order.module';
 
 @Module({
   imports: [
@@ -33,10 +33,17 @@ import {USER_SERVICE, PRODUCT_SERVICE, PAYMENT_SERVICE} from '@app/common';
         {
           name: USER_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('USER_HOST'),
-              port: configService.getOrThrow<number>('USER_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'user_queue',
+              queueOptions: {
+                durable: false,
+              },
+              // host: 'redis',
+              // port: 6379,
+              // host: configService.getOrThrow<string>('USER_HOST'),
+              // port: configService.getOrThrow<number>('USER_TCP_PORT'),
             },
           }),
           inject: [ConfigService],
@@ -44,10 +51,21 @@ import {USER_SERVICE, PRODUCT_SERVICE, PAYMENT_SERVICE} from '@app/common';
         {
           name: PRODUCT_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('PRODUCT_HOST'),
-              port: configService.getOrThrow<number>('PRODUCT_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'product_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // redis를 사용하여 마이크로서비스 간 통신을 설정합니다.
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Product 마이크로서비스
+              // host: configService.getOrThrow<string>('PRODUCT_HOST'),
+              // port: configService.getOrThrow<number>('PRODUCT_TCP_PORT'),
             },
           }),
           inject: [ConfigService],
@@ -55,10 +73,21 @@ import {USER_SERVICE, PRODUCT_SERVICE, PAYMENT_SERVICE} from '@app/common';
         {
           name: PAYMENT_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.TCP,
+            transport: Transport.RMQ,
             options: {
-              host: configService.getOrThrow<string>('PAYMENT_HOST'),
-              port: configService.getOrThrow<number>('PAYMENT_TCP_PORT'),
+              urls: ['amqp://rabbitmq:5672'],
+              queue: 'payment_queue',
+              queueOptions: {
+                durable: false,
+              },
+
+              // redis를 사용하여 마이크로서비스 간 통신을 설정합니다.
+              // host: 'redis',
+              // port: 6379,
+
+              //ApiGateway에서 Payment 마이크로서비스
+              // host: configService.getOrThrow<string>('PAYMENT_HOST'),
+              // port: configService.getOrThrow<number>('PAYMENT_TCP_PORT'),
             },
           }),
           inject: [ConfigService],
