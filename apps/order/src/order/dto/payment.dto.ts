@@ -1,5 +1,5 @@
 import {IsNotEmpty, IsNumber, IsString} from 'class-validator';
-import {PaymentMethod} from '../../../../payment/src/payment/entity/payment.entity';
+import {PaymentMethod} from '../entity/payment.entity';
 export class PaymentDto {
   @IsString()
   @IsNotEmpty()

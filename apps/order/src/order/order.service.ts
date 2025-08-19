@@ -1,6 +1,13 @@
-import {PAYMENT_SERVICE, PRODUCT_SERVICE, USER_SERVICE} from '@app/common';
-import {Inject, Injectable} from '@nestjs/common';
-import {ClientProxy} from '@nestjs/microservices';
+import {
+  PAYMENT_SERVICE,
+  PaymentMicroservice,
+  PRODUCT_SERVICE,
+  ProductMicroservice,
+  USER_SERVICE,
+  UserMicroservice,
+} from '@app/common';
+import {Inject, Injectable, OnModuleInit} from '@nestjs/common';
+import {ClientGrpc} from '@nestjs/microservices';
 import {InjectModel} from '@nestjs/mongoose';
 import {Model} from 'mongoose';
 import {lastValueFrom} from 'rxjs';
@@ -14,20 +21,39 @@ import {PaymentCancelledException} from './exception/payment-cancelled.exception
 import {PaymentFailedException} from './exception/payment-failed.exception';
 
 @Injectable()
-export class OrderService {
+export class OrderService implements OnModuleInit {
+  userService: UserMicroservice.UserServiceClient;
+  productService: ProductMicroservice.ProductServiceClient;
+  paymentService: PaymentMicroservice.PaymentServiceClient;
+
   constructor(
     @Inject(USER_SERVICE)
-    private readonly userService: ClientProxy, // UserService 마이크로서비스 클라이언트
+    private readonly userMicroService: ClientGrpc, // UserService 마이크로서비스 클라이언트
 
     @Inject(PRODUCT_SERVICE)
-    private readonly productService: ClientProxy, // ProductService 마이크로서비스 클라이언트
+    private readonly productMicroService: ClientGrpc, // ProductService 마이크로서비스 클라이언트
 
     @Inject(PAYMENT_SERVICE)
-    private readonly paymentService: ClientProxy, // PaymentService 마이크로서비스 클라이언트
+    private readonly paymentMicroService: ClientGrpc, // PaymentService 마이크로서비스 클라이언트
 
     @InjectModel(Order.name)
     private readonly orderModel: Model<Order>, // Mongoose 모델 주입
   ) {}
+  onModuleInit() {
+    this.userService =
+      this.userMicroService.getService<UserMicroservice.UserServiceClient>(
+        'UserService',
+      );
+    this.productService =
+      this.productMicroService.getService<ProductMicroservice.ProductServiceClient>(
+        'ProductService',
+      );
+
+    this.paymentService =
+      this.paymentMicroService.getService<PaymentMicroservice.PaymentServiceClient>(
+        'PaymentService',
+      );
+  }
   async createOrder(createOrderDto: CreateOrderDto) {
     const {productIds, address, payment, meta} = createOrderDto;
 
@@ -65,27 +91,25 @@ export class OrderService {
 
     // /// 2) User MS: 사용자 정보 가져오기
     // const userId = tResp.data.sub;
-    const uResp = await lastValueFrom(
-      this.userService.send({cmd: 'get_user_info'}, {userId}),
-    );
-    if (uResp.status === 'error') {
-      throw new PaymentCancelledException(uResp);
-    }
+    const uResp = await lastValueFrom(this.userService.getUserInfo({userId}));
+    // if (uResp.status === 'error') {
+    //   throw new PaymentCancelledException(uResp);
+    // }
 
-    return uResp.data;
+    return uResp;
   }
 
   private async getProductsByIds(productIds: string[]): Promise<Product[]> {
     const resp = await lastValueFrom(
-      this.productService.send({cmd: 'get_products_info'}, {productIds}),
+      this.productService.getProductsInfo({productIds}),
     );
 
-    if (resp.status === 'error') {
-      throw new PaymentCancelledException('상품 정보가 잘못됐습니다.');
-    }
+    // if (resp.status === 'error') {
+    //   throw new PaymentCancelledException('상품 정보가 잘못됐습니다.');
+    // }
 
     //product 엔티티로 전환
-    return resp.data.map((product) => ({
+    return resp.products.map((product) => ({
       productId: product.id,
       name: product.name,
       price: product.price,
@@ -131,14 +155,11 @@ export class OrderService {
   ) {
     try {
       const resp = await lastValueFrom(
-        this.paymentService.send(
-          {cmd: 'make_payment'},
-          {
-            ...payment,
-            userEmail,
-            orderId,
-          },
-        ),
+        this.paymentService.makePayment({
+          ...payment,
+          userEmail,
+          orderId,
+        }),
       );
 
       const isPaid = resp.paymentStatus === 'Approved';

@@ -7,7 +7,7 @@ export class Product {
   @Prop({
     required: true,
   })
-  productId: string; //product MicroService - productentity에  id가 된다.
+  productId: string;
 
   @Prop({
     required: true,

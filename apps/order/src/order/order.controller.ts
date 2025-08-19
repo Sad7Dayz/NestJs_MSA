@@ -1,35 +1,30 @@
-import {RpcInterceptor} from '@app/common';
-import {Controller, UseInterceptors} from '@nestjs/common';
-import {EventPattern, MessagePattern, Payload} from '@nestjs/microservices';
-import {CreateOrderDto} from './dto/create-order.dto';
-import {DeliveryStartedDto} from './dto/delivery-started.dto';
+import {OrderMicroservice} from '@app/common';
+import {Controller} from '@nestjs/common';
 import {OrderStatus} from './entity/order.entity';
+import {PaymentMethod} from './entity/payment.entity';
 import {OrderService} from './order.service';
 
 @Controller('order')
-export class OrderController {
+export class OrderController
+  implements OrderMicroservice.OrderServiceController
+{
   constructor(private readonly orderService: OrderService) {}
 
-  // @Post()
-  // @UsePipes(ValidationPipe)
-  // async createOrder(
-  //   @Authorization() token: string,
-  //   @Body() createOrderDto: CreateOrderDto,
-  // ) {
-  //   return this.orderService.createOrder(createOrderDto, token);
-  // }
-
-  @EventPattern({cmd: 'delivery_started'})
-  @UseInterceptors(RpcInterceptor)
-  async deliveryStarted(@Payload() payload: DeliveryStartedDto) {
+  async deliveryStarted(request: OrderMicroservice.DeliveryStartedRequest) {
     await this.orderService.changeOrderStatus(
-      payload.id,
+      request.id,
       OrderStatus.deliveryStarted,
     );
   }
 
-  @MessagePattern({cmd: 'create_order'})
-  async createOrder(@Payload() createOrderDto: CreateOrderDto) {
-    return this.orderService.createOrder(createOrderDto);
+  //오류?
+  async createOrder(request: OrderMicroservice.CreateOrderRequest) {
+    return this.orderService.createOrder({
+      ...request,
+      payment: {
+        ...request.payment,
+        paymentMethod: request.payment.paymentMethod as PaymentMethod,
+      },
+    });
   }
 }

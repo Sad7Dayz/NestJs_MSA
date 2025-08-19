@@ -7,9 +7,6 @@ export class CreateOrderDto implements UserMeta {
   @ValidateNested()
   @IsNotEmpty()
   meta: {user: UserPayloadDto};
-  @IsString()
-  @IsNotEmpty()
-  token: string;
 
   @IsArray()
   @IsString({each: true})

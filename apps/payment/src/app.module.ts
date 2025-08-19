@@ -1,10 +1,11 @@
-import {NOTIFICATION_SERVICE} from '@app/common';
+import {NOTIFICATION_SERVICE, NotificationMicroservice} from '@app/common';
 import {Module} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {Transport} from '@nestjs/microservices';
 import {ClientsModule} from '@nestjs/microservices/module/clients.module';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import * as Joi from 'joi';
+import {join} from 'path';
 import {PaymentModule} from './payment/payment.module';
 
 @Module({
@@ -30,13 +31,17 @@ import {PaymentModule} from './payment/payment.module';
         {
           name: NOTIFICATION_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.RMQ,
+            transport: Transport.GRPC,
             options: {
-              urls: ['amqp://rabbitmq:5672'],
-              queue: 'notification_queue',
-              queueOptions: {
-                durable: false,
-              },
+              package: NotificationMicroservice.protobufPackage,
+              protoPath: join(process.cwd(), 'proto/notification.proto'),
+              url: configService.getOrThrow('NOTIFICATION_GRPC_URL'),
+
+              // urls: ['amqp://rabbitmq:5672'],
+              // queue: 'notification_queue',
+              // queueOptions: {
+              //   durable: false,
+              // },
 
               // redis를 사용하여 마이크로서비스 간 통신을 설정합니다.
               // host: 'redis',

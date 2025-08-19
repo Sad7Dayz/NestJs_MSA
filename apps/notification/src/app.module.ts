@@ -1,9 +1,10 @@
-import {ORDER_SERVICE} from '@app/common';
+import {ORDER_SERVICE, OrderMicroservice} from '@app/common';
 import {Module} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {ClientsModule, Transport} from '@nestjs/microservices';
 import {MongooseModule} from '@nestjs/mongoose';
 import * as Joi from 'joi';
+import {join} from 'path';
 import {NotificationModule} from './notification/notification.module';
 
 @Module({
@@ -29,13 +30,16 @@ import {NotificationModule} from './notification/notification.module';
         {
           name: ORDER_SERVICE,
           useFactory: (configService: ConfigService) => ({
-            transport: Transport.RMQ,
+            transport: Transport.GRPC,
             options: {
-              urls: ['amqp://rabbitmq:5672'],
-              queue: 'order_queue',
-              queueOptions: {
-                durable: false,
-              },
+              package: OrderMicroservice.protobufPackage,
+              protoPath: join(process.cwd(), 'proto/order.proto'),
+              url: configService.getOrThrow('ORDER_GRPC_URL'),
+              // urls: ['amqp://rabbitmq:5672'],
+              // queue: 'order_queue',
+              // queueOptions: {
+              //   durable: false,
+              // },
 
               // host: 'redis',
               // port: 6379,
